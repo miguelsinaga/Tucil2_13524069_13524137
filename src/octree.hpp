@@ -1,5 +1,5 @@
 #pragma once
-#include "../parser/parser.hpp"
+#include "parser.hpp"
 #include <vector>
 #include <map>
 #include <memory>

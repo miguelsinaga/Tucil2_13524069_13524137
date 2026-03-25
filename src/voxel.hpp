@@ -1,6 +1,6 @@
 #pragma once
-#include "../parser/parser.hpp"
-#include "../octree/octree.hpp"
+#include "parser.hpp"
+#include "octree.hpp"
 #include <string>
 #include <vector>
 

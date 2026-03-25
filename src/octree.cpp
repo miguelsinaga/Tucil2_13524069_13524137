@@ -1,5 +1,5 @@
 #include "octree.hpp"
-#include "../intersect/intersect.hpp"
+#include "intersect.hpp"
 #include <thread>
 #include <algorithm>
 
