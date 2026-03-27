@@ -5,8 +5,13 @@
 
 OBJModel parseOBJ(const std::string& path) {
     std::ifstream file(path);
-    if (!file.is_open())
-        throw std::runtime_error("Cannot open file: " + path);
+    
+    if (!file.is_open()) {
+        std::string testPath = "../test/" + path;
+        file.open(testPath);
+        if (!file.is_open())
+            throw std::runtime_error("Cannot open file: " + path);
+    }
 
     OBJModel model;
     std::string line;

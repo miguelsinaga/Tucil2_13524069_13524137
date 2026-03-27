@@ -1,0 +1,33 @@
+# Deteksi OS
+ifeq ($(OS),Windows_NT)
+    TARGET = voxelizer.exe
+    RM = del /F /Q
+    OBJS_CLEAN = $(SRCS:.cpp=.o)
+else
+    TARGET = voxelizer
+    RM = rm -f
+    OBJS_CLEAN = $(OBJS)
+endif
+
+# Compiler yang digunakan
+CXX = g++
+
+# Flag compiler: -O3 untuk optimasi, -std=c++17 untuk fitur modern, -pthread untuk concurrency
+CXXFLAGS = -O3 -std=c++17 -pthread
+
+# Daftar semua file sumber (.cpp)
+SRCS = main.cpp parser.cpp octree.cpp intersect.cpp voxel.cpp OBJviewer.cpp
+
+# Mengubah .cpp menjadi .o (object files)
+OBJS = $(SRCS:.cpp=.o)
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS)
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+clean:
+	$(RM) $(OBJS_CLEAN) $(TARGET)

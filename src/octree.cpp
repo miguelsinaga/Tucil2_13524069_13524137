@@ -64,51 +64,52 @@ std::unique_ptr<Octree> makeOctant(const Vec3& mn, const Vec3& mx,
 // Threshold depth below which we stop spawning new threads (avoids overhead)
 static const int THREAD_DEPTH_LIMIT = 3;
 
-void buildOctree(Octree* node,
-                 const std::vector<Vec3>& verts,
-                 const std::vector<Face>& faces,
-                 int depth, int maxDepth,
-                 std::map<int,int>& prunedCounts,
-                 std::mutex& mu) {
-    if (depth == maxDepth) {
-        node->isLeaf = true;
-        return;
-    }
 
-    Vec3 mid = midpoint(node->minBound, node->maxBound);
+// void buildOctree(Octree* node,
+//                  const std::vector<Vec3>& verts,
+//                  const std::vector<Face>& faces,
+//                  int depth, int maxDepth,
+//                  std::map<int,int>& prunedCounts,
+//                  std::mutex& mu) {
+//     if (depth == maxDepth) {
+//         node->isLeaf = true;
+//         return;
+//     }
 
-    bool useThreads = (depth < THREAD_DEPTH_LIMIT);
-    std::vector<std::thread> threads;
+//     Vec3 mid = midpoint(node->minBound, node->maxBound);
 
-    for (int i = 0; i < 8; ++i) {
-        auto child = makeOctant(node->minBound, node->maxBound, mid, i);
+//     bool useThreads = (depth < THREAD_DEPTH_LIMIT);
+//     std::vector<std::thread> threads;
 
-        if (triBoxIntersect(child->minBound, child->maxBound, verts, faces)) {
-            Octree* childPtr = child.get();
-            node->children[i] = std::move(child);
+//     for (int i = 0; i < 8; ++i) {
+//         auto child = makeOctant(node->minBound, node->maxBound, mid, i);
 
-            if (useThreads) {
-                // Spawn thread; each gets its own local prunedCounts and merges later
-                threads.emplace_back([childPtr, &verts, &faces, depth, maxDepth, &mu]() {
-                    std::map<int,int> local;
-                    std::mutex localMu;
-                    buildOctree(childPtr, verts, faces, depth + 1, maxDepth, local, localMu);
-                    std::lock_guard<std::mutex> lock(mu);
-                    // merge local into shared (note: caller's prunedCounts is passed by ref)
-                    // We need to store local somewhere accessible — use a shared ref trick below
-                    // (see wrapper lambda capture)
-                });
-            } else {
-                buildOctree(childPtr, verts, faces, depth + 1, maxDepth, prunedCounts, mu);
-            }
-        } else {
-            std::lock_guard<std::mutex> lock(mu);
-            prunedCounts[depth + 1]++;
-        }
-    }
+//         if (triBoxIntersect(child->minBound, child->maxBound, verts, faces)) {
+    //             Octree* childPtr = child.get();
+//             node->children[i] = std::move(child);
 
-    for (auto& t : threads) t.join();
-}
+//             if (useThreads) {
+//                 // Spawn thread; each gets its own local prunedCounts and merges later
+//                 threads.emplace_back([childPtr, &verts, &faces, depth, maxDepth, &mu]() {
+    //                     std::map<int,int> local;
+    //                     std::mutex localMu;
+//                     buildOctree(childPtr, verts, faces, depth + 1, maxDepth, local, localMu);
+//                     std::lock_guard<std::mutex> lock(mu);
+//                     // merge local into shared (note: caller's prunedCounts is passed by ref)
+//                     // We need to store local somewhere accessible — use a shared ref trick below
+//                     // (see wrapper lambda capture)
+//                 });
+//             } else {
+    //                 buildOctree(childPtr, verts, faces, depth + 1, maxDepth, prunedCounts, mu);
+    //             }
+    //         } else {
+        //             std::lock_guard<std::mutex> lock(mu);
+        //             prunedCounts[depth + 1]++;
+        //         }
+        //     }
+        
+        //     for (auto& t : threads) t.join();
+// }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NOTE: The simple thread approach above has a race on prunedCounts for the
@@ -126,24 +127,24 @@ static void buildInternal(Octree* node,
         node->isLeaf = true;
         return;
     }
-
+    
     Vec3 mid = midpoint(node->minBound, node->maxBound);
     bool useThreads = (depth < THREAD_DEPTH_LIMIT);
-
+    
     struct ChildResult {
         std::map<int,int> pruned;
     };
-
+    
     std::vector<ChildResult> results(8);
     std::vector<std::thread> threads;
-
+    
     for (int i = 0; i < 8; ++i) {
         auto child = makeOctant(node->minBound, node->maxBound, mid, i);
-
+        
         if (triBoxIntersect(child->minBound, child->maxBound, verts, faces)) {
             Octree* childPtr = child.get();
             node->children[i] = std::move(child);
-
+            
             if (useThreads) {
                 ChildResult* res = &results[i];
                 threads.emplace_back([childPtr, &verts, &faces, depth, maxDepth, res]() {
@@ -156,9 +157,9 @@ static void buildInternal(Octree* node,
             results[i].pruned[depth + 1]++;
         }
     }
-
+    
     for (auto& t : threads) t.join();
-
+    
     // Merge all child results
     for (int i = 0; i < 8; ++i) {
         for (auto& [d, cnt] : results[i].pruned) {
@@ -167,6 +168,15 @@ static void buildInternal(Octree* node,
     }
 }
 
+void buildOctree(Octree* node,
+                 const std::vector<Vec3>& verts,
+                 const std::vector<Face>& faces,
+                 int depth, int maxDepth,
+                 std::map<int,int>& prunedCounts,
+                 std::mutex& mu) {
+
+    buildInternal(node, verts, faces, depth, maxDepth, prunedCounts);
+}
 // ─────────────────────────────────────────────────────────────────────────────
 // Public wrapper — replaces the earlier broken version
 // ─────────────────────────────────────────────────────────────────────────────
@@ -175,11 +185,11 @@ static void buildInternal(Octree* node,
 // The mutex param is kept for API compatibility but unused (thread safety
 // is handled inside buildInternal via thread-local maps).
 void buildOctreeClean(Octree* node,
-                       const std::vector<Vec3>& verts,
-                       const std::vector<Face>& faces,
-                       int depth, int maxDepth,
-                       std::map<int,int>& prunedCounts) {
-    buildInternal(node, verts, faces, depth, maxDepth, prunedCounts);
+    const std::vector<Vec3>& verts,
+    const std::vector<Face>& faces,
+    int depth, int maxDepth,
+    std::map<int,int>& prunedCounts) {
+        buildInternal(node, verts, faces, depth, maxDepth, prunedCounts);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
