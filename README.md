@@ -36,7 +36,7 @@ Agar library SFML dapat terbaca dan tidak terjadi error `Entry Point Not Found`,
 Buka terminal (PowerShell/CMD) di dalam folder `src`, lalu jalankan perintah berikut:
 
 ```powershell
-g++ -O3 -std=c++17 -pthread main.cpp parser.cpp octree.cpp intersect.cpp voxel.cpp viewer.cpp -o ../bin/voxelizer -I"C:\SFML\SFML-2.6.1\include" -L"C:\SFML\SFML-2.6.1\lib" -lsfml-graphics -lsfml-window -lsfml-system -static-libgcc -static-libstdc++ -static -lpthread
+g++ -O3 -std=c++17 -pthread main.cpp parser.cpp octree.cpp intersect.cpp voxel.cpp OBJviewer.cpp -o ../bin/voxelizer -I"C:\SFML\SFML-2.6.1\include" -L"C:\SFML\SFML-2.6.1\lib" -lsfml-graphics -lsfml-window -lsfml-system -static-libgcc -static-libstdc++ -static -lpthread
 ```
 
 ### Cara Menjalankan & Menggunakan
