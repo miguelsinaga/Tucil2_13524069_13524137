@@ -11,6 +11,5 @@ struct VoxelStats {
 };
 
 // Generate voxel .obj from leaf octree nodes.
-// Each leaf box is emitted as 8 verts + 12 triangles (6 quad faces split into 2).
 VoxelStats writeVoxelOBJ(const std::vector<const Octree*>& leaves,
                           const std::string& outputPath);

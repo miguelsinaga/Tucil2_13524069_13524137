@@ -124,7 +124,6 @@ void display3DModel(const string& objFilePath){
                 z2 += distance;
                 faceDepth += z2;
 
-                // ─── FIX 3: Skip face jika z2 <= 0 (di belakang/di dalam kamera) ──
                 if (z2 <= 0.001f) { valid = false; break; }
 
                 pixelCoords[i].x = (x2 / z2) * projectionScale + 400.0f;

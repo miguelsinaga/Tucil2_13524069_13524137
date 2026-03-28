@@ -3,10 +3,8 @@
 #include <thread>
 #include <algorithm>
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Bounding Box — Divide & Conquer
-// ─────────────────────────────────────────────────────────────────────────────
 
+//Bounding box 
 static std::pair<Vec3,Vec3> mergeBounds(const Vec3& minA, const Vec3& maxA,
                                          const Vec3& minB, const Vec3& maxB) {
     return {
@@ -28,10 +26,7 @@ std::pair<Vec3,Vec3> boundingBox(const std::vector<Vec3>& verts) {
     return bbDivCon(verts, 0, (int)verts.size() - 1);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
 Vec3 midpoint(const Vec3& a, const Vec3& b) {
     return Vec3((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2);
 }
@@ -57,9 +52,7 @@ std::unique_ptr<Octree> makeOctant(const Vec3& mn, const Vec3& mx,
     return node;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Build — Divide & Conquer + Concurrency
-// ─────────────────────────────────────────────────────────────────────────────
+
 
 // Threshold depth below which we stop spawning new threads (avoids overhead)
 static const int THREAD_DEPTH_LIMIT = 3;
@@ -111,13 +104,9 @@ static const int THREAD_DEPTH_LIMIT = 3;
         //     for (auto& t : threads) t.join();
 // }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// NOTE: The simple thread approach above has a race on prunedCounts for the
-// threaded branches. Below is the cleaner full version that fixes this.
-// We replace buildOctree with the version that properly merges local counts.
-// ─────────────────────────────────────────────────────────────────────────────
 
-// Internal version: always uses local pruned map, merges into parent after.
+
+// always uses local pruned map, merges into parent after.
 static void buildInternal(Octree* node,
                            const std::vector<Vec3>& verts,
                            const std::vector<Face>& faces,
@@ -177,9 +166,7 @@ void buildOctree(Octree* node,
 
     buildInternal(node, verts, faces, depth, maxDepth, prunedCounts);
 }
-// ─────────────────────────────────────────────────────────────────────────────
-// Public wrapper — replaces the earlier broken version
-// ─────────────────────────────────────────────────────────────────────────────
+
 
 // We re-declare the public API to delegate to buildInternal.
 // The mutex param is kept for API compatibility but unused (thread safety
@@ -191,10 +178,6 @@ void buildOctreeClean(Octree* node,
     std::map<int,int>& prunedCounts) {
         buildInternal(node, verts, faces, depth, maxDepth, prunedCounts);
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Utilities
-// ─────────────────────────────────────────────────────────────────────────────
 
 void collectLeaves(const Octree* node, std::vector<const Octree*>& leaves) {
     if (!node) return;
